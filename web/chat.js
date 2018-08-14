@@ -4,9 +4,7 @@ if (typeof web3 !== 'undefined') {
     web3 = new Web3(web3.currentProvider);
     console.log("Metamask detected");
 } else {
-    // set the provider you want from Web3.providers
-    web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
-    console.log("localhost");
+    alert("The plugin Metamask is not installed. Please visit https://metamask.io/ and reload the page after the installation.");
 }
 console.log(web3);
 console.log(web3.isConnected());
@@ -81,8 +79,34 @@ $('body > div > div > div:nth-child(2) > span').click(function(){
 //-- Clear Chat
 resetChat();
 
+var messageList = new Array();
 var lastMessage=0;
-setInterval(function() {
+
+function addMessageToList(chat, sizeList) {
+    messageList.push(chat);
+    if(messageList.length==sizeList) {
+        displayAllRemainingMessage();
+    }
+}
+
+function displayAllRemainingMessage() {
+    messageList.sort(function compare(a,b) {
+        return a[2]-b[2];
+    });
+    for(var i=lastMessage;i<messageList.length;i++) {
+        console.log(messageList);
+        var chat = messageList[i];
+        var address = chat[0];
+        if (address==web3.eth.accounts[0]) {
+            insertChat("me", chat[1], chat[0], chat[2]);
+        } else {
+            insertChat("you", chat[1], chat[0], chat[2]);
+        }
+        lastMessage+=1;
+    }
+}
+
+function getAllMessage() {
     simpleChatAddr.getSizeList(function(error, message) {
         if(error) {
             console.log("Error when getting the size of the list!");
@@ -97,16 +121,15 @@ setInterval(function() {
                         console.log(error2);
                     } else {
                         console.log(chat);
-                        var address = chat[0];
-                        if (address==web3.eth.accounts[0]) {
-                            insertChat("me", chat[1], chat[0], chat[2]);
-                        } else {
-                            insertChat("you", chat[1], chat[0], chat[2]);
-                        }
-                        lastMessage+=1;
+                        addMessageToList(chat, sizeList);
                     }
                 });
-            }
+            }         
         }
     });
+}
+
+
+setInterval(function() {
+    getAllMessage();
 }, 2000);
