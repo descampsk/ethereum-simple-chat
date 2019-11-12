@@ -1,5 +1,5 @@
 console.log(window.web3);
-var web3 = window.web3;
+//var web3 = window.web3;
 if (typeof web3 !== 'undefined') {
     web3 = new Web3(web3.currentProvider);
     console.log("Metamask detected");
@@ -7,12 +7,13 @@ if (typeof web3 !== 'undefined') {
     alert("The plugin Metamask is not installed. Please visit https://metamask.io/ and reload the page after the installation.");
 }
 console.log(web3);
-console.log(web3.isConnected());
 //0x093fb362b84eca8b6222dc5f34738b062f4ca903
 console.log("Init Contract")
-var simplechatContract = web3.eth.contract([{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"messageList","outputs":[{"name":"sender","type":"address"},{"name":"message","type":"string"},{"name":"blockNumber","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getSizeList","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_message","type":"string"}],"name":"sendChat","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]);
-var simpleChatAddr = simplechatContract.at("0x093fb362b84eca8b6222dc5f34738b062f4ca903");
-
+const simplechatContractAddr = "0x093fb362b84eca8b6222dc5f34738b062f4ca903"
+const simplechatContractAbi = [{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"messageList","outputs":[{"name":"sender","type":"address"},{"name":"message","type":"string"},{"name":"blockNumber","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getSizeList","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_message","type":"string"}],"name":"sendChat","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]
+let simpleChatContract = new web3.eth.Contract(simplechatContractAbi, simplechatContractAddr);
+console.log(simpleChatContract)
+console.log('Contract initialized')
 
 var me = {};
 me.avatar = "https://lh6.googleusercontent.com/-lr2nyjhhjXw/AAAAAAAAAAI/AAAAAAAARmE/MdtfUmC0M4s/photo.jpg?sz=48";
@@ -56,18 +57,24 @@ $(".mytext").on("keydown", function(e){
         var text = $(this).val();
         if (text !== ""){
 
-            simpleChatAddr.sendChat.sendTransaction(text, {
-                from: web3.eth.accounts[0],
-                gas: 420000 },
-                function(error, transactionHash) {
-                    if(error) {
-                        alert(error);
-                        $(this).val('');
-                    } else {
-                        console.log(transactionHash);
-                    }
+            ethereum.enable().then(accounts => {
+                if (!accounts || accounts.length === 0) {
+                    alert('No metamask account is detected.')
+                } else {
+                    const account = accounts[0]
+                    simpleChatContract.methods.sendChat(text).send({
+                        from: account,
+                        gas: 420000 },
+                        function(error, transactionHash) {
+                            if(error) {
+                                alert(error);
+                                $(this).val('');
+                            } else {
+                                console.log(transactionHash);
+                            }
+                        })
                 }
-            );
+            })
         }
     }
 });
@@ -107,7 +114,7 @@ function displayAllRemainingMessage() {
 }
 
 function getAllMessage() {
-    simpleChatAddr.getSizeList(function(error, message) {
+    simpleChatContract.methods.getSizeList().call(function(error, message) {
         if(error) {
             console.log("Error when getting the size of the list!");
             console.log(error);
@@ -115,7 +122,7 @@ function getAllMessage() {
             //console.log(message);
             var sizeList = message;
             for(var i=lastMessage;i<sizeList;i++) {
-                simpleChatAddr.messageList(i, function(error2, chat) {
+                simpleChatContract.methods.messageList(i).call(function(error2, chat) {
                     if(error2) {
                         console.log("Error when getting the message");
                         console.log(error2);
